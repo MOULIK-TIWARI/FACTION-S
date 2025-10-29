@@ -51,19 +51,19 @@ export const VotingPanel = ({ playerFaction, hasVoted, onSubmitVote, loading, co
     return (
       <div className="space-y-4">
         {/* Action Buttons - Matching the image design */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
           {/* Attack Button */}
           <button
             onClick={() => setSelectedAction('Attack')}
-            className={`p-4 rounded-lg transition-all ${
+            className={`p-3 sm:p-4 rounded-lg transition-all ${
               selectedAction === 'Attack' 
                 ? 'bg-gray-700 text-white border-2 border-gray-600' 
                 : 'bg-gray-600 text-white hover:bg-gray-700'
             }`}
           >
             <div className="text-center">
-              <div className="text-2xl mb-2">⚔️</div>
-              <div className="text-sm font-bold">Attack</div>
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">⚔️</div>
+              <div className="text-xs sm:text-sm font-bold">Attack</div>
               <div className="text-xs text-gray-300">Vote count: 58</div>
             </div>
           </button>
@@ -71,43 +71,27 @@ export const VotingPanel = ({ playerFaction, hasVoted, onSubmitVote, loading, co
           {/* Defend Button */}
           <button
             onClick={() => setSelectedAction('Defend')}
-            className={`p-4 rounded-lg transition-all ${
+            className={`p-3 sm:p-4 rounded-lg transition-all ${
               selectedAction === 'Defend' 
                 ? 'bg-gray-700 text-white border-2 border-gray-600' 
                 : 'bg-gray-600 text-white hover:bg-gray-700'
             }`}
           >
             <div className="text-center">
-              <div className="text-2xl mb-2">🛡️</div>
-              <div className="text-sm font-bold">Defend</div>
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">🛡️</div>
+              <div className="text-xs sm:text-sm font-bold">Defend</div>
               <div className="text-xs text-gray-300">Vote count: 124</div>
-            </div>
-          </button>
-
-          {/* Heal Button */}
-          <button
-            onClick={() => setSelectedAction('Train')}
-            className={`p-4 rounded-lg transition-all ${
-              selectedAction === 'Train' 
-                ? 'bg-gray-700 text-white border-2 border-gray-600' 
-                : 'bg-gray-600 text-white hover:bg-gray-700'
-            }`}
-          >
-            <div className="text-center">
-              <div className="text-2xl mb-2">🩹</div>
-              <div className="text-sm font-bold">Heal</div>
-              <div className="text-xs text-gray-300">Vote count: 36</div>
             </div>
           </button>
 
           {/* Train Button - Highlighted as selected */}
           <button
             onClick={() => setSelectedAction('Train')}
-            className="p-4 rounded-lg bg-teal-500 text-white border-2 border-teal-400 relative"
+            className="p-3 sm:p-4 rounded-lg bg-teal-500 text-white border-2 border-teal-400 relative"
           >
             <div className="text-center">
-              <div className="text-2xl mb-2">💪</div>
-              <div className="text-sm font-bold">Train</div>
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">💪</div>
+              <div className="text-xs sm:text-sm font-bold">Train</div>
               <div className="text-xs text-teal-100">Vote count: 87</div>
             </div>
             {/* Checkmark for selected */}
@@ -125,7 +109,7 @@ export const VotingPanel = ({ playerFaction, hasVoted, onSubmitVote, loading, co
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Target:
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {availableTargets.map(faction => (
                 <button
                   key={faction}
@@ -146,7 +130,7 @@ export const VotingPanel = ({ playerFaction, hasVoted, onSubmitVote, loading, co
         <button
           onClick={handleSubmit}
           disabled={loading || (selectedAction === 'Attack' && !selectedTarget)}
-          className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded transition-colors"
+          className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-2 sm:py-3 px-4 rounded text-sm sm:text-base transition-colors"
         >
           {loading ? 'Submitting...' : `Vote ${selectedAction}${selectedTarget ? ` on ${selectedTarget}` : ''}`}
         </button>

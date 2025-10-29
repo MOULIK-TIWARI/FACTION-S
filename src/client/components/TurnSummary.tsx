@@ -45,27 +45,31 @@ export const TurnSummary = ({ results, currentTurn, compact = false }: TurnSumma
   if (compact) {
     return (
       <div className="text-sm text-gray-700 space-y-1">
-        {/* Sample battle updates matching the image */}
-        <div className="flex items-start gap-1">
-          <span className="text-base">🔥</span>
-          <span>Fire attacked 🌍 Earth!</span>
-        </div>
-        <div className="flex items-start gap-1">
-          <span className="text-base">🔥</span>
-          <span>Fire attacked 🌍 Earth defended successfully! 🔥 Earth.</span>
-        </div>
-        <div className="flex items-start gap-1">
-          <span className="text-base">💧</span>
-          <span>Water trained, increasing their resolve by 10 HP.</span>
-        </div>
-        
-        {/* Show actual results if available */}
-        {results.slice(0, 2).map((result, index) => (
-          <div key={index} className="flex items-start gap-1">
-            <span className="text-base">{FACTION_EMOJIS[result.faction]}</span>
-            <span>{result.result}</span>
-          </div>
-        ))}
+        {results.length > 0 ? (
+          // Show actual results
+          results.slice(0, 3).map((result, index) => (
+            <div key={index} className="flex items-start gap-1">
+              <span className="text-base">{FACTION_EMOJIS[result.faction]}</span>
+              <span>{result.result}</span>
+            </div>
+          ))
+        ) : (
+          // Show sample battle updates when no results
+          <>
+            <div className="flex items-start gap-1">
+              <span className="text-base">🔥</span>
+              <span>Fire attacked 🌍 Earth!</span>
+            </div>
+            <div className="flex items-start gap-1">
+              <span className="text-base">🔥</span>
+              <span>Fire attacked 🌍 Earth defended successfully! 🔥 Earth.</span>
+            </div>
+            <div className="flex items-start gap-1">
+              <span className="text-base">💧</span>
+              <span>Water trained, increasing their resolve by 10 points.</span>
+            </div>
+          </>
+        )}
       </div>
     );
   }

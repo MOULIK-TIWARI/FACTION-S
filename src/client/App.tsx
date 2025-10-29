@@ -4,9 +4,10 @@ import { FactionSelection } from './components/FactionSelection';
 import { VotingPanel } from './components/VotingPanel';
 import { Leaderboard } from './components/Leaderboard';
 import { TurnSummary } from './components/TurnSummary';
-import { AdminPanel } from './components/AdminPanel';
+
 import { TurnTimer } from './components/TurnTimer';
 import { FactionHeader } from './components/FactionHeader';
+import { DynamicComments } from './components/DynamicComments';
 
 export const App = () => {
   const {
@@ -21,13 +22,15 @@ export const App = () => {
     restartGame,
     refreshGameState,
     checkAndProcessTurn,
+    addComment,
+    getComments,
     clearError,
   } = useGame();
 
   const [showAdmin, setShowAdmin] = useState(false);
 
 
-  // Auto-refresh game state every 15 seconds and check for turn processing
+  // Auto-refresh game state every 30 seconds and check for turn processing
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!loading) {
@@ -39,7 +42,7 @@ export const App = () => {
           refreshGameState();
         }
       }
-    }, 15000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [loading, refreshGameState, checkAndProcessTurn]);
@@ -48,7 +51,8 @@ export const App = () => {
   useEffect(() => {
     // Show admin panel if username suggests moderator status
     // In a real app, this would be determined server-side
-    if (username && (username.includes('mod') || username.includes('admin'))) {
+    // For now, show to all users for testing
+    if (username) {
       setShowAdmin(true);
     }
   }, [username]);
@@ -95,25 +99,68 @@ export const App = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            Reddit Factions: The Great Subreddit War
-          </h1>
-          <p className="text-gray-600 text-sm">
-            Hundreds of Redditors. Four Factions. One Epic Battle.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div className="flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
+                Reddit Factions: The Great Subreddit War
+              </h1>
+              <p className="text-gray-600 text-xs sm:text-sm">
+                Hundreds of Redditors. Four Factions. One Epic Battle.
+              </p>
+            </div>
+            
+            {/* Quick Restart Button */}
+            {/* <button
+              onClick={async () => {
+                if (window.confirm('🔄 Quick Restart Game?\n\nThis will reset everything and start a new 50-round battle!')) {
+                  try {
+                    await restartGame();
+                    alert('🎉 New game started!');
+                  } catch (error) {
+                    alert('❌ Restart failed. Try again.');
+                  }
+                }
+              }}
+              disabled={loading}
+              className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors shadow-md text-sm sm:text-base w-full sm:w-auto"
+            >
+              {loading ? '🔄 Restarting...' : '🔄 New Game'}
+            </button> */}
+          </div>
         </div>
       </div>
 
       {/* Faction Header Bar */}
       <FactionHeader gameState={gameState} currentTurn={gameState.currentTurn} />
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
+        {/* Game Ended Message */}
+        {!gameState.gameActive && (
+          <div className="mb-4 sm:mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6 text-center">
+            <h2 className="text-xl sm:text-2xl font-bold text-yellow-800 mb-2">🏆 Game Completed!</h2>
+            <p className="text-yellow-700 mb-4 text-sm sm:text-base">
+              The battle has ended after 50 rounds! Here are the final standings:
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+              {Object.entries(gameState.factions)
+                .sort(([,a], [,b]) => b.score - a.score || b.hp - a.hp)
+                .map(([faction, stats], index) => (
+                  <div key={faction} className="bg-white rounded-lg p-2 sm:p-3 border">
+                    <div className="text-base sm:text-lg font-bold">#{index + 1}</div>
+                    <div className="text-xs sm:text-sm">{faction}</div>
+                    <div className="text-xs text-gray-600">{stats.score} pts • {stats.hp} HP</div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Main Game Area - Left Side */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-4 sm:space-y-6">
             {/* Battle Updates */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="font-bold text-gray-900 mb-3">Latest Battle Update:</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
+              <h3 className="font-bold text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base">Latest Battle Update:</h3>
               <TurnSummary
                 results={gameState.lastTurnResults}
                 currentTurn={gameState.currentTurn}
@@ -123,15 +170,15 @@ export const App = () => {
 
             {/* Voting Section */}
             {!playerFaction ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <FactionSelection onJoinFaction={joinFaction} loading={loading} />
               </div>
             ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="font-bold text-gray-900 mb-4">
+              <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
+                <h3 className="font-bold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">
                   Daily Faction Orders - Round {gameState.currentTurn}
                 </h3>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
                   Vote for your team's action below! (Your faction: {playerFaction})
                 </p>
                 <VotingPanel
@@ -144,47 +191,106 @@ export const App = () => {
               </div>
             )}
 
-            {/* Comments Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="font-bold text-gray-900 mb-4">Comments</h3>
-              
-              <div className="space-y-3">
-                <div className="border-b border-gray-100 pb-3">
-                  <div className="flex items-start gap-3">
-                    <div className="text-sm">
-                      <span className="font-medium text-blue-600">u/Player123:</span>
-                      <span className="text-gray-700 ml-2">This cool! Voted attack!</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="border-b border-gray-100 pb-3">
-                  <div className="flex items-start gap-3">
-                    <div className="text-sm">
-                      <span className="font-medium text-green-600">u/DevvitMod:</span>
-                      <span className="text-gray-700 ml-2">Reminder: One vote per player! Attack day. Choose wisely!</span>
-                    </div>
-                  </div>
-                </div>
+            {/* Dynamic Comments Section */}
+            <DynamicComments
+              onAddComment={addComment}
+              onGetComments={getComments}
+              username={username}
+              playerFaction={playerFaction}
+            />
 
-                {username && (
-                  <div className="pt-2">
-                    <div className="flex items-start gap-3">
-                      <div className="text-sm">
-                        <span className="font-medium text-orange-600">u/{username}:</span>
-                        <span className="text-gray-700 ml-2">
-                          {playerFaction ? `Fighting for ${playerFaction}! 🎯` : 'Still choosing my faction...'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+            {/* Main Restart Button - Always Visible */}
+            <div className="bg-red-50 rounded-lg border border-red-200 p-3 sm:p-4">
+              <h3 className="font-bold text-red-800 mb-2 sm:mb-3 text-sm sm:text-base">🔄 Game Controls</h3>
+              <p className="text-xs sm:text-sm text-red-600 mb-3 sm:mb-4">
+                Reset the entire game to start fresh with new rounds
+              </p>
+              {/* <button
+                onClick={async () => {
+                  console.log('Restart button clicked');
+                  if (window.confirm('Are you sure you want to restart the game?\n\nThis will:\n• Reset turn counter to 1\n• Reset all faction HP to 100\n• Reset all faction scores to 0\n• Clear all player data\n• Clear all comments\n• Start a new 50-round game')) {
+                    console.log('User confirmed restart');
+                    try {
+                      console.log('Calling restartGame function...');
+                      const success = await restartGame();
+                      console.log('RestartGame result:', success);
+                      
+                      if (success) {
+                        alert('🎉 Game has been successfully restarted!\n\nNew 50-round battle begins now!');
+                        // Force a page refresh to ensure clean state
+                        window.location.reload();
+                      } else {
+                        alert('❌ Failed to restart game. Please check the console for errors.');
+                      }
+                    } catch (error) {
+                      console.error('Restart error:', error);
+                      alert('❌ Failed to restart game. Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                    }
+                  }
+                }}
+                disabled={loading}
+                className="w-full bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg text-sm sm:text-base transition-colors shadow-lg"
+              >
+                {loading ? '🔄 Restarting Game...' : '🔄 Restart Game (New 50 Rounds)'}
+              </button> */}
+              {/* Test Button for Debugging */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                <button
+                  onClick={async () => {
+                    console.log('Test hook function');
+                    try {
+                      const result = await restartGame();
+                      console.log('Hook function result:', result);
+                      alert('Hook function result: ' + result);
+                    } catch (error) {
+                      console.error('Hook function error:', error);
+                      alert('Hook function error: ' + error);
+                    }
+                  }}
+                  className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-3 sm:px-4 rounded text-xs sm:text-sm"
+                >
+                  🔧 RESTART GAME 
+                </button>
+
+                {/* <button
+                  onClick={async () => {
+                    console.log('Test direct API call');
+                    try {
+                      const response = await fetch('/api/restart-game', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                      });
+                      console.log('Response status:', response.status);
+                      const data = await response.json();
+                      console.log('Response data:', data);
+                      alert('Direct API result: ' + JSON.stringify(data));
+                    } catch (error) {
+                      console.error('Direct API error:', error);
+                      alert('Direct API error: ' + error);
+                    }
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-3 sm:px-4 rounded text-xs sm:text-sm"
+                >
+                  🧪 Test API
+                </button> */}
               </div>
+
+              {/* <div className="mt-3 text-xs text-red-500 bg-red-100 rounded p-2">
+                <p className="font-medium mb-1">⚠️ This will completely reset:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs">
+                  <p>• Turn counter → 1</p>
+                  <p>• All HP → 100</p>
+                  <p>• All scores → 0</p>
+                  <p>• All comments</p>
+                  <p>• Player factions</p>
+                  <p>• Vote history</p>
+                </div>
+              </div> */}
             </div>
           </div>
 
           {/* Sidebar - Right Side */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="lg:col-span-1 space-y-3 sm:space-y-4">
             {/* Turn Timer */}
             <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
               <TurnTimer 
@@ -216,15 +322,37 @@ export const App = () => {
               </div>
             </div>
 
-            {/* Admin Panel */}
-            {showAdmin && (
-              <AdminPanel 
-                onRestartGame={restartGame} 
-                onForceTurn={refreshGameState}
-                loading={loading}
-                compact={true}
-              />
-            )}
+            {/* Moderator Restart Button */}
+            {/* {showAdmin && (
+              <div className="bg-red-50 rounded-lg border border-red-200 p-4">
+                <h4 className="font-bold text-red-800 mb-2 text-sm">🛠️ Moderator Controls</h4>
+                <p className="text-xs text-red-600 mb-3">
+                  Reset the game to starting conditions
+                </p>
+                <button
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to restart the game? This will reset turn counter to 1, all faction HP to 100, all scores to 0, and clear all player data.')) {
+                      try {
+                        await restartGame();
+                        alert('Game has been successfully restarted!');
+                      } catch (error) {
+                        alert('Failed to restart game. Please try again.');
+                      }
+                    }
+                  }}
+                  disabled={loading}
+                  className="w-full bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-2 px-3 rounded text-sm transition-colors"
+                >
+                  {loading ? 'Restarting...' : '🔄 Restart Game'}
+                </button>
+                <div className="text-xs text-red-500 mt-2 space-y-1">
+                  <p>• Resets turn counter to 1</p>
+                  <p>• Resets all faction HP to 100</p>
+                  <p>• Resets all faction scores to 0</p>
+                  <p>• Clears all player data</p>
+                </div>
+              </div>
+            )} */}
           </div>
         </div>
       </div>

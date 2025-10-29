@@ -36,15 +36,15 @@ export const Leaderboard = ({ gameState, playerFaction, compact = false }: Leade
   if (compact) {
     return (
       <div>
-        <h4 className="font-bold text-gray-900 mb-3">HEALTH STATS</h4>
-        <div className="space-y-2">
+        <h4 className="font-bold text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base">HEALTH STATS</h4>
+        <div className="space-y-1 sm:space-y-2">
           {sortedFactions.map(([faction, stats]) => {
             const isPlayerFaction = faction === playerFaction;
 
             return (
-              <div key={faction} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{FACTION_EMOJIS[faction]}</span>
+              <div key={faction} className="flex items-center justify-between text-xs sm:text-sm">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="text-sm sm:text-lg">{FACTION_EMOJIS[faction]}</span>
                   <span className={isPlayerFaction ? 'font-bold' : ''}>{faction}</span>
                   {isPlayerFaction && <span className="text-yellow-600">★</span>}
                 </div>
@@ -54,9 +54,9 @@ export const Leaderboard = ({ gameState, playerFaction, compact = false }: Leade
           })}
         </div>
 
-        <div className="mt-4">
-          <h4 className="font-bold text-gray-900 mb-2">Global Power Rankings</h4>
-          <div className="space-y-1 text-sm">
+        <div className="mt-3 sm:mt-4">
+          <h4 className="font-bold text-gray-900 mb-2 text-sm sm:text-base">Global Power Rankings</h4>
+          <div className="space-y-1 text-xs sm:text-sm">
             {sortedFactions.map(([faction, stats], index) => (
               <div key={faction} className="flex items-center justify-between">
                 <span>{index + 1}. {FACTION_EMOJIS[faction]} {faction}</span>

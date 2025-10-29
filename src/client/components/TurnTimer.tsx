@@ -46,8 +46,8 @@ export const TurnTimer = ({ currentTurn, onTurnProcessed, compact = false }: Tur
 
     fetchTurnStatus();
 
-    // Update every 5 seconds for faster feedback
-    const interval = setInterval(fetchTurnStatus, 5000);
+    // Update every 30 seconds for turn status
+    const interval = setInterval(fetchTurnStatus, 30000);
     return () => clearInterval(interval);
   }, [currentTurn, lastCheckedTurn, onTurnProcessed]);
 
@@ -89,8 +89,8 @@ export const TurnTimer = ({ currentTurn, onTurnProcessed, compact = false }: Tur
   if (compact) {
     return (
       <div className="text-center">
-        <h4 className="font-bold text-blue-800 mb-2">⏰ Round {currentTurn}</h4>
-        <div className="text-sm text-blue-600">
+        <h4 className="font-bold text-blue-800 mb-2 text-sm sm:text-base">⏰ Round {currentTurn}</h4>
+        <div className="text-xs sm:text-sm text-blue-600">
           {isProcessing ? (
             <span className="font-bold text-orange-600 flex items-center justify-center gap-1">
               <span className="animate-spin">⚡</span>
@@ -100,7 +100,7 @@ export const TurnTimer = ({ currentTurn, onTurnProcessed, compact = false }: Tur
             <span className="font-bold text-green-600">Ready!</span>
           ) : (
             <div>
-              <div className="font-mono font-bold">{formatTime(timeUntilNext)}</div>
+              <div className="font-mono font-bold text-sm sm:text-base">{formatTime(timeUntilNext)}</div>
               <div className="text-xs text-gray-500">until next turn</div>
             </div>
           )}
@@ -125,7 +125,7 @@ export const TurnTimer = ({ currentTurn, onTurnProcessed, compact = false }: Tur
         )}
       </p>
       <p className="text-xs text-blue-500 mt-2">
-        Turns process automatically every 2 minutes
+        Turns process automatically every 30 seconds
       </p>
       {timeUntilNext <= 5000 && timeUntilNext > 0 && (
         <p className="text-xs text-orange-600 mt-1 font-medium">

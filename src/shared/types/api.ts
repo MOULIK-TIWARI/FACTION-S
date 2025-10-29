@@ -73,3 +73,23 @@ export type RestartGameResponse = {
   success: boolean;
   message: string;
 };
+
+export interface Comment {
+  id: string;
+  username: string;
+  message: string;
+  timestamp: number;
+  faction?: FactionType;
+}
+
+export type AddCommentResponse = {
+  type: 'add-comment';
+  success: boolean;
+  comment?: Comment;
+  message: string;
+};
+
+export type GetCommentsResponse = {
+  type: 'get-comments';
+  comments: Comment[];
+};

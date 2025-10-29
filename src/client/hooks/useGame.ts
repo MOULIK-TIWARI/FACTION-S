@@ -207,6 +207,37 @@ export const useGame = () => {
     }
   }, [refreshGameState]);
 
+  const addComment = useCallback(async (message: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      });
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      
+      return data.success;
+    } catch (err) {
+      console.error('Failed to add comment', err);
+      return false;
+    }
+  }, []);
+
+  const getComments = useCallback(async () => {
+    try {
+      const res = await fetch('/api/comments');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      
+      return data.comments || [];
+    } catch (err) {
+      console.error('Failed to get comments', err);
+      return [];
+    }
+  }, []);
+
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
@@ -218,6 +249,8 @@ export const useGame = () => {
     restartGame,
     refreshGameState,
     checkAndProcessTurn,
+    addComment,
+    getComments,
     clearError,
   } as const;
 };

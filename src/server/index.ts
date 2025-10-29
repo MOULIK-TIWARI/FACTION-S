@@ -8,7 +8,7 @@ import {
   FactionType,
   ActionType,
 } from '../shared/types/api';
-import { reddit, createServer, context, getServerPort } from '@devvit/web/server';
+import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
 import { createPost } from './core/post';
 import { GameLogic } from './core/gameLogic';
 import { TurnScheduler } from './core/scheduler';
@@ -240,10 +240,10 @@ router.post<{}, { success: boolean; message: string; processed?: boolean; nextTu
           processed: true,
         });
       } else {
-        const minutesRemaining = Math.ceil((result.nextTurnIn || 0) / (1000 * 60));
+        const secondsRemaining = Math.ceil((result.nextTurnIn || 0) / 1000);
         res.json({
           success: true,
-          message: `Next turn in approximately ${minutesRemaining} minutes`,
+          message: `Next turn in approximately ${secondsRemaining} seconds`,
           processed: false,
           nextTurnIn: result.nextTurnIn || 0,
         });
@@ -258,24 +258,24 @@ router.post<{}, { success: boolean; message: string; processed?: boolean; nextTu
   }
 );
 
-router.get<{}, { timeUntilNext: number; minutesRemaining: number; shouldProcess: boolean }>(
+router.get<{}, { timeUntilNext: number; secondsRemaining: number; shouldProcess: boolean }>(
   '/api/turn-status',
   async (_req, res): Promise<void> => {
     try {
       const timeUntilNext = await TurnScheduler.getTimeUntilNextTurn();
-      const minutesRemaining = Math.ceil(timeUntilNext / (1000 * 60));
+      const secondsRemaining = Math.ceil(timeUntilNext / 1000);
       const shouldProcess = await TurnScheduler.shouldProcessTurn();
 
       res.json({
         timeUntilNext,
-        minutesRemaining,
+        secondsRemaining,
         shouldProcess,
       });
     } catch (error) {
       console.error('Turn status error:', error);
       res.status(500).json({
         timeUntilNext: 0,
-        minutesRemaining: 0,
+        secondsRemaining: 0,
         shouldProcess: false,
       });
     }
@@ -304,6 +304,84 @@ router.post<{}, { success: boolean; message: string; forced?: boolean }>(
     }
   }
 );
+
+// Comments endpoints
+router.get('/api/comments', async (_req, res): Promise<void> => {
+  try {
+    const commentsStr = await redis.get('game_comments') || '[]';
+    const comments = JSON.parse(commentsStr);
+    
+    res.json({
+      type: 'get-comments',
+      comments,
+    });
+  } catch (error) {
+    console.error('Get comments error:', error);
+    res.status(500).json({
+      type: 'get-comments',
+      comments: [],
+    });
+  }
+});
+
+router.post('/api/comments', async (req, res): Promise<void> => {
+  try {
+    const username = await reddit.getCurrentUsername();
+    if (!username) {
+      res.status(401).json({
+        type: 'add-comment',
+        success: false,
+        message: 'User not authenticated',
+      });
+      return;
+    }
+
+    const { message } = req.body;
+    if (!message || message.trim().length === 0) {
+      res.status(400).json({
+        type: 'add-comment',
+        success: false,
+        message: 'Comment message is required',
+      });
+      return;
+    }
+
+    // Get user's faction
+    const playerFaction = await GameLogic.getPlayerFaction(username);
+
+    const comment = {
+      id: Date.now().toString(),
+      username,
+      message: message.trim(),
+      timestamp: Date.now(),
+      faction: playerFaction,
+    };
+
+    // Get existing comments
+    const commentsStr = await redis.get('game_comments') || '[]';
+    const comments = JSON.parse(commentsStr);
+    
+    // Add new comment and keep only last 50 comments
+    comments.push(comment);
+    const recentComments = comments.slice(-50);
+    
+    await redis.set('game_comments', JSON.stringify(recentComments));
+
+    res.json({
+      type: 'add-comment',
+      success: true,
+      comment,
+      message: 'Comment added successfully',
+    });
+  } catch (error) {
+    console.error('Add comment error:', error);
+    res.status(500).json({
+      type: 'add-comment',
+      success: false,
+      message: 'Failed to add comment',
+    });
+  }
+});
 
 router.post('/internal/on-app-install', async (_req, res): Promise<void> => {
   try {

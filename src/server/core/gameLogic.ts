@@ -15,6 +15,7 @@ export class GameLogic {
   private static readonly VOTES_KEY = 'current_votes';
   private static readonly INITIAL_HP = 100;
   private static readonly INITIAL_SCORE = 0;
+  private static readonly MAX_ROUNDS = 50;
 
   static async initializeGame(): Promise<GameState> {
     const initialState: GameState = {
@@ -104,6 +105,18 @@ export class GameLogic {
 
   static async processTurn(): Promise<TurnResult[]> {
     const gameState = await this.getGameState();
+    
+    // Check if game has reached maximum rounds
+    if (gameState.currentTurn >= this.MAX_ROUNDS) {
+      gameState.gameActive = false;
+      await this.saveGameState(gameState);
+      return [{
+        faction: 'Fire',
+        action: 'Train',
+        result: `Game has ended after ${this.MAX_ROUNDS} rounds! Final standings determined.`,
+      }];
+    }
+    
     const votesStr = (await redis.get(this.VOTES_KEY)) || '[]';
     const votes: Vote[] = JSON.parse(votesStr);
 
@@ -300,6 +313,10 @@ export class GameLogic {
 
   static async resetGame(): Promise<void> {
     await this.initializeGame();
+    // Also reset the turn timer by clearing the last turn processed timestamp
+    await redis.del('last_turn_processed');
+    // Clear comments when game restarts
+    await redis.del('game_comments');
   }
 
   static async getPlayerFaction(username: string): Promise<FactionType | undefined> {
