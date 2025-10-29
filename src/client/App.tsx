@@ -6,6 +6,7 @@ import { Leaderboard } from './components/Leaderboard';
 import { TurnSummary } from './components/TurnSummary';
 import { AdminPanel } from './components/AdminPanel';
 import { TurnTimer } from './components/TurnTimer';
+import { FactionHeader } from './components/FactionHeader';
 
 export const App = () => {
   const {
@@ -19,21 +20,29 @@ export const App = () => {
     submitVote,
     restartGame,
     refreshGameState,
+    checkAndProcessTurn,
     clearError,
   } = useGame();
 
   const [showAdmin, setShowAdmin] = useState(false);
 
-  // Auto-refresh game state every 30 seconds
+
+  // Auto-refresh game state every 15 seconds and check for turn processing
   useEffect(() => {
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       if (!loading) {
-        refreshGameState();
+        // First check if a turn should be processed
+        const turnProcessed = await checkAndProcessTurn();
+        
+        // Always refresh game state (either after turn processing or for regular updates)
+        if (!turnProcessed) {
+          refreshGameState();
+        }
       }
-    }, 30000);
+    }, 15000);
 
     return () => clearInterval(interval);
-  }, [loading, refreshGameState]);
+  }, [loading, refreshGameState, checkAndProcessTurn]);
 
   // Check if user might be a moderator (simple heuristic)
   useEffect(() => {
@@ -82,100 +91,142 @@ export const App = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">⚔️ Reddit Factions</h1>
-          {username && (
-            <p className="text-lg text-gray-600">
-              Welcome, <span className="font-semibold">{username}</span>!
-            </p>
-          )}
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            Reddit Factions: The Great Subreddit War
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Hundreds of Redditors. Four Factions. One Epic Battle.
+          </p>
         </div>
+      </div>
 
-        <div className="space-y-8">
-          {/* Main Game Area */}
-          {!playerFaction ? (
-            <div className="flex justify-center">
-              <FactionSelection onJoinFaction={joinFaction} loading={loading} />
-            </div>
-          ) : (
-            <div className="flex justify-center">
-              <VotingPanel
-                playerFaction={playerFaction}
-                hasVoted={hasVoted}
-                onSubmitVote={submitVote}
-                loading={loading}
+      {/* Faction Header Bar */}
+      <FactionHeader gameState={gameState} currentTurn={gameState.currentTurn} />
+
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Main Game Area - Left Side */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Battle Updates */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="font-bold text-gray-900 mb-3">Latest Battle Update:</h3>
+              <TurnSummary
+                results={gameState.lastTurnResults}
+                currentTurn={gameState.currentTurn}
+                compact={true}
               />
             </div>
-          )}
 
-          {/* Turn Timer */}
-          <div className="flex justify-center">
-            <TurnTimer currentTurn={gameState.currentTurn} />
-          </div>
+            {/* Voting Section */}
+            {!playerFaction ? (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <FactionSelection onJoinFaction={joinFaction} loading={loading} />
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <h3 className="font-bold text-gray-900 mb-4">
+                  Daily Faction Orders - Round {gameState.currentTurn}
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Vote for your team's action below! (Your faction: {playerFaction})
+                </p>
+                <VotingPanel
+                  playerFaction={playerFaction}
+                  hasVoted={hasVoted}
+                  onSubmitVote={submitVote}
+                  loading={loading}
+                  compact={true}
+                />
+              </div>
+            )}
 
-          {/* Leaderboard */}
-          <div className="flex justify-center">
-            <Leaderboard gameState={gameState} playerFaction={playerFaction} />
-          </div>
+            {/* Comments Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="font-bold text-gray-900 mb-4">Comments</h3>
+              
+              <div className="space-y-3">
+                <div className="border-b border-gray-100 pb-3">
+                  <div className="flex items-start gap-3">
+                    <div className="text-sm">
+                      <span className="font-medium text-blue-600">u/Player123:</span>
+                      <span className="text-gray-700 ml-2">This cool! Voted attack!</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border-b border-gray-100 pb-3">
+                  <div className="flex items-start gap-3">
+                    <div className="text-sm">
+                      <span className="font-medium text-green-600">u/DevvitMod:</span>
+                      <span className="text-gray-700 ml-2">Reminder: One vote per player! Attack day. Choose wisely!</span>
+                    </div>
+                  </div>
+                </div>
 
-          {/* Turn Summary */}
-          <div className="flex justify-center">
-            <TurnSummary
-              results={gameState.lastTurnResults}
-              currentTurn={gameState.currentTurn}
-            />
-          </div>
-
-          {/* Admin Panel (conditionally shown) */}
-          {showAdmin && (
-            <div className="flex justify-center">
-              <AdminPanel onRestartGame={restartGame} loading={loading} />
+                {username && (
+                  <div className="pt-2">
+                    <div className="flex items-start gap-3">
+                      <div className="text-sm">
+                        <span className="font-medium text-orange-600">u/{username}:</span>
+                        <span className="text-gray-700 ml-2">
+                          {playerFaction ? `Fighting for ${playerFaction}! 🎯` : 'Still choosing my faction...'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-center gap-4">
-            <button
-              onClick={refreshGameState}
-              disabled={loading}
-              className="bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300 text-white px-4 py-2 rounded transition-colors"
-            >
-              {loading ? 'Refreshing...' : '🔄 Refresh Game State'}
-            </button>
-            
+          {/* Sidebar - Right Side */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Turn Timer */}
+            <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
+              <TurnTimer 
+                currentTurn={gameState.currentTurn} 
+                onTurnProcessed={refreshGameState}
+                compact={true}
+              />
+            </div>
+
+            {/* Rankings */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <Leaderboard gameState={gameState} playerFaction={playerFaction} compact={true} />
+            </div>
+
+            {/* Game Info */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-bold text-gray-900 mb-2">Game Info</h4>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>👥 {Object.keys(gameState.players).length} total players</p>
+                <p className={`${loading ? 'text-orange-600' : 'text-green-600'}`}>
+                  {loading ? '🔄 Updating...' : '✅ Connected'}
+                </p>
+                <button 
+                  onClick={refreshGameState}
+                  className="text-blue-600 hover:text-blue-800 underline text-xs"
+                >
+                  Full Game Rules & FAQ
+                </button>
+              </div>
+            </div>
+
+            {/* Admin Panel */}
             {showAdmin && (
-              <button
-                onClick={async () => {
-                  try {
-                    const res = await fetch('/api/process-turn', { method: 'POST' });
-                    const data = await res.json();
-                    alert(data.message);
-                    if (data.processed) {
-                      refreshGameState();
-                    }
-                  } catch (error) {
-                    alert('Failed to process turn');
-                  }
-                }}
-                disabled={loading}
-                className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white px-4 py-2 rounded transition-colors"
-              >
-                ⚡ Process Turn (Admin)
-              </button>
+              <AdminPanel 
+                onRestartGame={restartGame} 
+                onForceTurn={refreshGameState}
+                loading={loading}
+                compact={true}
+              />
             )}
           </div>
         </div>
-
-        {/* Footer */}
-        <footer className="mt-12 text-center text-sm text-gray-500">
-          <p>
-            A Reddit Devvit game • Turn {gameState.currentTurn} • 
-            {Object.keys(gameState.players).length} total players
-          </p>
-        </footer>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { GameState, FactionType } from '../../shared/types/api';
 interface LeaderboardProps {
   gameState: GameState;
   playerFaction?: FactionType | undefined;
+  compact?: boolean;
 }
 
 const FACTION_COLORS = {
@@ -19,9 +20,9 @@ const FACTION_EMOJIS = {
   Air: '💨',
 };
 
-export const Leaderboard = ({ gameState, playerFaction }: LeaderboardProps) => {
+export const Leaderboard = ({ gameState, playerFaction, compact = false }: LeaderboardProps) => {
   const factionEntries = Object.entries(gameState.factions) as [FactionType, typeof gameState.factions[FactionType]][];
-  
+
   // Sort by score (descending), then by HP (descending)
   const sortedFactions = factionEntries.sort(([, a], [, b]) => {
     if (a.score !== b.score) return b.score - a.score;
@@ -31,6 +32,42 @@ export const Leaderboard = ({ gameState, playerFaction }: LeaderboardProps) => {
   const getPlayerCount = (faction: FactionType): number => {
     return Object.values(gameState.players).filter(p => p.faction === faction).length;
   };
+
+  if (compact) {
+    return (
+      <div>
+        <h4 className="font-bold text-gray-900 mb-3">HEALTH STATS</h4>
+        <div className="space-y-2">
+          {sortedFactions.map(([faction, stats]) => {
+            const isPlayerFaction = faction === playerFaction;
+
+            return (
+              <div key={faction} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{FACTION_EMOJIS[faction]}</span>
+                  <span className={isPlayerFaction ? 'font-bold' : ''}>{faction}</span>
+                  {isPlayerFaction && <span className="text-yellow-600">★</span>}
+                </div>
+                <span className="font-medium">({stats.hp} HP)</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-4">
+          <h4 className="font-bold text-gray-900 mb-2">Global Power Rankings</h4>
+          <div className="space-y-1 text-sm">
+            {sortedFactions.map(([faction, stats], index) => (
+              <div key={faction} className="flex items-center justify-between">
+                <span>{index + 1}. {FACTION_EMOJIS[faction]} {faction}</span>
+                <span>{stats.hp} HP</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-2xl">
@@ -43,7 +80,7 @@ export const Leaderboard = ({ gameState, playerFaction }: LeaderboardProps) => {
         {sortedFactions.map(([faction, stats], index) => {
           const isPlayerFaction = faction === playerFaction;
           const playerCount = getPlayerCount(faction);
-          
+
           return (
             <div
               key={faction}
@@ -70,7 +107,7 @@ export const Leaderboard = ({ gameState, playerFaction }: LeaderboardProps) => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="text-right">
                   <div className="font-bold text-lg">
                     {stats.score} pts
@@ -80,7 +117,7 @@ export const Leaderboard = ({ gameState, playerFaction }: LeaderboardProps) => {
                   </div>
                 </div>
               </div>
-              
+
               {/* HP Bar */}
               <div className="mt-3">
                 <div className="w-full bg-white bg-opacity-50 rounded-full h-2">
@@ -90,7 +127,7 @@ export const Leaderboard = ({ gameState, playerFaction }: LeaderboardProps) => {
                   />
                 </div>
               </div>
-              
+
               {index === 0 && stats.score > 0 && (
                 <div className="mt-2 text-center">
                   <span className="text-xs bg-yellow-300 text-yellow-800 px-2 py-1 rounded-full font-medium">

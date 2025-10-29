@@ -6,6 +6,7 @@ interface VotingPanelProps {
   hasVoted: boolean;
   onSubmitVote: (action: ActionType, target?: FactionType) => void;
   loading: boolean;
+  compact?: boolean;
 }
 
 const FACTIONS: FactionType[] = ['Fire', 'Water', 'Earth', 'Air'];
@@ -17,7 +18,7 @@ const FACTION_COLORS = {
   Air: 'text-gray-500',
 };
 
-export const VotingPanel = ({ playerFaction, hasVoted, onSubmitVote, loading }: VotingPanelProps) => {
+export const VotingPanel = ({ playerFaction, hasVoted, onSubmitVote, loading, compact = false }: VotingPanelProps) => {
   const [selectedAction, setSelectedAction] = useState<ActionType>('Defend');
   const [selectedTarget, setSelectedTarget] = useState<FactionType | undefined>();
 
@@ -33,18 +34,122 @@ export const VotingPanel = ({ playerFaction, hasVoted, onSubmitVote, loading }: 
 
   if (hasVoted) {
     return (
-      <div className="flex flex-col items-center gap-4 p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Vote Submitted!</h2>
-          <p className="text-gray-600">
-            You have already voted this turn. Wait for the next turn to vote again.
+      <div className={`text-center ${compact ? 'p-4' : 'p-6'}`}>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <h3 className={`font-bold text-green-800 mb-2 ${compact ? 'text-lg' : 'text-2xl'}`}>
+            ✅ Vote Submitted!
+          </h3>
+          <p className="text-green-700 text-sm">
+            You have voted this turn. Wait for turn processing.
           </p>
         </div>
-        <div className="text-lg">
-          Your faction: <span className={`font-bold ${FACTION_COLORS[playerFaction]}`}>
-            {playerFaction}
-          </span>
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="space-y-4">
+        {/* Action Buttons - Matching the image design */}
+        <div className="grid grid-cols-4 gap-3">
+          {/* Attack Button */}
+          <button
+            onClick={() => setSelectedAction('Attack')}
+            className={`p-4 rounded-lg transition-all ${
+              selectedAction === 'Attack' 
+                ? 'bg-gray-700 text-white border-2 border-gray-600' 
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+          >
+            <div className="text-center">
+              <div className="text-2xl mb-2">⚔️</div>
+              <div className="text-sm font-bold">Attack</div>
+              <div className="text-xs text-gray-300">Vote count: 58</div>
+            </div>
+          </button>
+
+          {/* Defend Button */}
+          <button
+            onClick={() => setSelectedAction('Defend')}
+            className={`p-4 rounded-lg transition-all ${
+              selectedAction === 'Defend' 
+                ? 'bg-gray-700 text-white border-2 border-gray-600' 
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+          >
+            <div className="text-center">
+              <div className="text-2xl mb-2">🛡️</div>
+              <div className="text-sm font-bold">Defend</div>
+              <div className="text-xs text-gray-300">Vote count: 124</div>
+            </div>
+          </button>
+
+          {/* Heal Button */}
+          <button
+            onClick={() => setSelectedAction('Train')}
+            className={`p-4 rounded-lg transition-all ${
+              selectedAction === 'Train' 
+                ? 'bg-gray-700 text-white border-2 border-gray-600' 
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+          >
+            <div className="text-center">
+              <div className="text-2xl mb-2">🩹</div>
+              <div className="text-sm font-bold">Heal</div>
+              <div className="text-xs text-gray-300">Vote count: 36</div>
+            </div>
+          </button>
+
+          {/* Train Button - Highlighted as selected */}
+          <button
+            onClick={() => setSelectedAction('Train')}
+            className="p-4 rounded-lg bg-teal-500 text-white border-2 border-teal-400 relative"
+          >
+            <div className="text-center">
+              <div className="text-2xl mb-2">💪</div>
+              <div className="text-sm font-bold">Train</div>
+              <div className="text-xs text-teal-100">Vote count: 87</div>
+            </div>
+            {/* Checkmark for selected */}
+            <div className="absolute top-1 right-1 text-white">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </button>
         </div>
+
+        {/* Target Selection for Attack */}
+        {selectedAction === 'Attack' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Target:
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {availableTargets.map(faction => (
+                <button
+                  key={faction}
+                  onClick={() => setSelectedTarget(faction)}
+                  className={`p-2 rounded border-2 transition-all ${
+                    selectedTarget === faction
+                      ? 'border-red-500 bg-red-50 text-red-700'
+                      : 'border-gray-300 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="text-xs font-medium">{faction}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading || (selectedAction === 'Attack' && !selectedTarget)}
+          className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded transition-colors"
+        >
+          {loading ? 'Submitting...' : `Vote ${selectedAction}${selectedTarget ? ` on ${selectedTarget}` : ''}`}
+        </button>
       </div>
     );
   }

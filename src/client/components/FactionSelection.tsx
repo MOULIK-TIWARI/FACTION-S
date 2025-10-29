@@ -30,15 +30,13 @@ const FACTION_INFO = {
 
 export const FactionSelection = ({ onJoinFaction, loading }: FactionSelectionProps) => {
   return (
-    <div className="flex flex-col items-center gap-6 p-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Reddit Factions</h1>
-        <p className="text-lg text-gray-600 mb-6">
-          Choose your faction and join the battle!
-        </p>
-      </div>
+    <div className="text-center">
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Faction</h2>
+      <p className="text-gray-600 mb-6">
+        Join one of the four elemental factions and fight for supremacy!
+      </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {(Object.entries(FACTION_INFO) as [FactionType, typeof FACTION_INFO[FactionType]][]).map(
           ([faction, info]) => (
             <button
@@ -46,22 +44,24 @@ export const FactionSelection = ({ onJoinFaction, loading }: FactionSelectionPro
               onClick={() => onJoinFaction(faction)}
               disabled={loading}
               className={`
-                ${info.color} text-white p-6 rounded-lg shadow-lg
+                ${info.color} text-white p-4 rounded-lg shadow-lg
                 transition-all duration-200 transform hover:scale-105
                 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
-                flex flex-col items-center gap-3
+                flex flex-col items-center gap-2
               `}
             >
-              <div className="text-4xl">{info.emoji}</div>
-              <div className="text-xl font-bold">{faction}</div>
-              <div className="text-sm text-center opacity-90">{info.description}</div>
+              <div className="text-3xl">{info.emoji}</div>
+              <div className="text-lg font-bold">{faction}</div>
+              <div className="text-xs text-center opacity-90 leading-tight">{info.description}</div>
             </button>
           )
         )}
       </div>
 
-      <div className="text-center text-sm text-gray-500 max-w-md">
-        Once you join a faction, you cannot change. Choose wisely!
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <p className="text-sm text-yellow-800">
+          ⚠️ <strong>Warning:</strong> Once you join a faction, you cannot change. Choose wisely!
+        </p>
       </div>
     </div>
   );

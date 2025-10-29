@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { 
-  InitResponse, 
-  GameState, 
-  FactionType, 
+import type {
+  InitResponse,
+  GameState,
+  FactionType,
   ActionType,
   JoinFactionResponse,
   VoteResponse,
   GameStateResponse,
-  RestartGameResponse
+  RestartGameResponse,
 } from '../../shared/types/api';
 
 interface GameHookState {
@@ -37,7 +37,7 @@ export const useGame = () => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: InitResponse = await res.json();
         if (data.type !== 'init') throw new Error('Unexpected response');
-        
+
         setState({
           gameState: data.gameState,
           username: data.username,
@@ -48,10 +48,10 @@ export const useGame = () => {
         });
       } catch (err) {
         console.error('Failed to init game', err);
-        setState((prev) => ({ 
-          ...prev, 
-          loading: false, 
-          error: err instanceof Error ? err.message : 'Failed to load game'
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: err instanceof Error ? err.message : 'Failed to load game',
         }));
       }
     };
@@ -60,91 +60,119 @@ export const useGame = () => {
 
   const refreshGameState = useCallback(async () => {
     try {
+      setState((prev) => ({ ...prev, loading: true }));
+
       const res = await fetch('/api/game-state');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: GameStateResponse = await res.json();
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         gameState: data.gameState,
         playerFaction: data.playerFaction,
         hasVoted: data.hasVoted,
+        loading: false,
         error: null,
       }));
     } catch (err) {
       console.error('Failed to refresh game state', err);
-      setState(prev => ({ 
-        ...prev, 
-        error: err instanceof Error ? err.message : 'Failed to refresh game state'
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error: err instanceof Error ? err.message : 'Failed to refresh game state',
       }));
     }
   }, []);
 
-  const joinFaction = useCallback(async (faction: FactionType): Promise<boolean> => {
+  const checkAndProcessTurn = useCallback(async () => {
     try {
-      const res = await fetch('/api/join-faction', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ faction }),
-      });
-      
+      const res = await fetch('/api/process-turn', { method: 'POST' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: JoinFactionResponse = await res.json();
-      
-      if (data.success) {
-        setState(prev => ({
-          ...prev,
-          playerFaction: faction,
-          error: null,
-        }));
+      const data = await res.json();
+
+      if (data.processed) {
+        // Turn was processed, refresh game state
         await refreshGameState();
-      } else {
-        setState(prev => ({ ...prev, error: data.message }));
+        return true;
       }
-      
-      return data.success;
+      return false;
     } catch (err) {
-      console.error('Failed to join faction', err);
-      setState(prev => ({ 
-        ...prev, 
-        error: err instanceof Error ? err.message : 'Failed to join faction'
-      }));
+      console.error('Failed to check/process turn', err);
       return false;
     }
   }, [refreshGameState]);
 
-  const submitVote = useCallback(async (action: ActionType, target?: FactionType): Promise<boolean> => {
-    try {
-      const res = await fetch('/api/vote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, target }),
-      });
-      
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: VoteResponse = await res.json();
-      
-      if (data.success) {
-        setState(prev => ({
+  const joinFaction = useCallback(
+    async (faction: FactionType): Promise<boolean> => {
+      try {
+        const res = await fetch('/api/join-faction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ faction }),
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: JoinFactionResponse = await res.json();
+
+        if (data.success) {
+          setState((prev) => ({
+            ...prev,
+            playerFaction: faction,
+            error: null,
+          }));
+          await refreshGameState();
+        } else {
+          setState((prev) => ({ ...prev, error: data.message }));
+        }
+
+        return data.success;
+      } catch (err) {
+        console.error('Failed to join faction', err);
+        setState((prev) => ({
           ...prev,
-          hasVoted: true,
-          error: null,
+          error: err instanceof Error ? err.message : 'Failed to join faction',
         }));
-        await refreshGameState();
-      } else {
-        setState(prev => ({ ...prev, error: data.message }));
+        return false;
       }
-      
-      return data.success;
-    } catch (err) {
-      console.error('Failed to submit vote', err);
-      setState(prev => ({ 
-        ...prev, 
-        error: err instanceof Error ? err.message : 'Failed to submit vote'
-      }));
-      return false;
-    }
-  }, [refreshGameState]);
+    },
+    [refreshGameState]
+  );
+
+  const submitVote = useCallback(
+    async (action: ActionType, target?: FactionType): Promise<boolean> => {
+      try {
+        const res = await fetch('/api/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, target }),
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: VoteResponse = await res.json();
+
+        if (data.success) {
+          setState((prev) => ({
+            ...prev,
+            hasVoted: true,
+            error: null,
+          }));
+          await refreshGameState();
+        } else {
+          setState((prev) => ({ ...prev, error: data.message }));
+        }
+
+        return data.success;
+      } catch (err) {
+        console.error('Failed to submit vote', err);
+        setState((prev) => ({
+          ...prev,
+          error: err instanceof Error ? err.message : 'Failed to submit vote',
+        }));
+        return false;
+      }
+    },
+    [refreshGameState]
+  );
 
   const restartGame = useCallback(async (): Promise<boolean> => {
     try {
@@ -152,12 +180,12 @@ export const useGame = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-      
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: RestartGameResponse = await res.json();
-      
+
       if (data.success) {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           playerFaction: undefined,
           hasVoted: false,
@@ -165,22 +193,22 @@ export const useGame = () => {
         }));
         await refreshGameState();
       } else {
-        setState(prev => ({ ...prev, error: data.message }));
+        setState((prev) => ({ ...prev, error: data.message }));
       }
-      
+
       return data.success;
     } catch (err) {
       console.error('Failed to restart game', err);
-      setState(prev => ({ 
-        ...prev, 
-        error: err instanceof Error ? err.message : 'Failed to restart game'
+      setState((prev) => ({
+        ...prev,
+        error: err instanceof Error ? err.message : 'Failed to restart game',
       }));
       return false;
     }
   }, [refreshGameState]);
 
   const clearError = useCallback(() => {
-    setState(prev => ({ ...prev, error: null }));
+    setState((prev) => ({ ...prev, error: null }));
   }, []);
 
   return {
@@ -189,6 +217,7 @@ export const useGame = () => {
     submitVote,
     restartGame,
     refreshGameState,
+    checkAndProcessTurn,
     clearError,
   } as const;
 };

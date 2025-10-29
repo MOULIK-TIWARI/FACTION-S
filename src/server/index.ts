@@ -1,12 +1,12 @@
 import express from 'express';
-import { 
-  InitResponse, 
-  JoinFactionResponse, 
-  VoteResponse, 
-  GameStateResponse, 
+import {
+  InitResponse,
+  JoinFactionResponse,
+  VoteResponse,
+  GameStateResponse,
   RestartGameResponse,
   FactionType,
-  ActionType 
+  ActionType,
 } from '../shared/types/api';
 import { reddit, createServer, context, getServerPort } from '@devvit/web/server';
 import { createPost } from './core/post';
@@ -63,100 +63,102 @@ router.get<{ postId: string }, InitResponse | { status: string; message: string 
   }
 );
 
-router.post<{}, JoinFactionResponse | { status: string; message: string }, { faction: FactionType }>(
-  '/api/join-faction',
-  async (req, res): Promise<void> => {
-    try {
-      const username = await reddit.getCurrentUsername();
-      if (!username) {
-        res.status(401).json({
-          status: 'error',
-          message: 'User not authenticated',
-        });
-        return;
-      }
-
-      const { faction } = req.body;
-      if (!faction || !['Fire', 'Water', 'Earth', 'Air'].includes(faction)) {
-        res.status(400).json({
-          status: 'error',
-          message: 'Invalid faction',
-        });
-        return;
-      }
-
-      const success = await GameLogic.joinFaction(username, faction);
-      
-      if (success) {
-        res.json({
-          type: 'join-faction',
-          success: true,
-          faction,
-          message: `Successfully joined ${faction} faction!`,
-        });
-      } else {
-        res.json({
-          type: 'join-faction',
-          success: false,
-          message: 'You are already in a faction!',
-        });
-      }
-    } catch (error) {
-      console.error('Join faction error:', error);
-      res.status(500).json({
+router.post<
+  {},
+  JoinFactionResponse | { status: string; message: string },
+  { faction: FactionType }
+>('/api/join-faction', async (req, res): Promise<void> => {
+  try {
+    const username = await reddit.getCurrentUsername();
+    if (!username) {
+      res.status(401).json({
         status: 'error',
-        message: 'Failed to join faction',
+        message: 'User not authenticated',
+      });
+      return;
+    }
+
+    const { faction } = req.body;
+    if (!faction || !['Fire', 'Water', 'Earth', 'Air'].includes(faction)) {
+      res.status(400).json({
+        status: 'error',
+        message: 'Invalid faction',
+      });
+      return;
+    }
+
+    const success = await GameLogic.joinFaction(username, faction);
+
+    if (success) {
+      res.json({
+        type: 'join-faction',
+        success: true,
+        faction,
+        message: `Successfully joined ${faction} faction!`,
+      });
+    } else {
+      res.json({
+        type: 'join-faction',
+        success: false,
+        message: 'You are already in a faction!',
       });
     }
+  } catch (error) {
+    console.error('Join faction error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to join faction',
+    });
   }
-);
+});
 
-router.post<{}, VoteResponse | { status: string; message: string }, { action: ActionType; target?: FactionType }>(
-  '/api/vote',
-  async (req, res): Promise<void> => {
-    try {
-      const username = await reddit.getCurrentUsername();
-      if (!username) {
-        res.status(401).json({
-          status: 'error',
-          message: 'User not authenticated',
-        });
-        return;
-      }
-
-      const { action, target } = req.body;
-      if (!action || !['Attack', 'Defend', 'Train'].includes(action)) {
-        res.status(400).json({
-          status: 'error',
-          message: 'Invalid action',
-        });
-        return;
-      }
-
-      const success = await GameLogic.submitVote(username, action, target);
-      
-      if (success) {
-        res.json({
-          type: 'vote',
-          success: true,
-          message: `Vote submitted: ${action}${target ? ` on ${target}` : ''}`,
-        });
-      } else {
-        res.json({
-          type: 'vote',
-          success: false,
-          message: 'Unable to submit vote. You may have already voted or are not in a faction.',
-        });
-      }
-    } catch (error) {
-      console.error('Vote error:', error);
-      res.status(500).json({
+router.post<
+  {},
+  VoteResponse | { status: string; message: string },
+  { action: ActionType; target?: FactionType }
+>('/api/vote', async (req, res): Promise<void> => {
+  try {
+    const username = await reddit.getCurrentUsername();
+    if (!username) {
+      res.status(401).json({
         status: 'error',
-        message: 'Failed to submit vote',
+        message: 'User not authenticated',
+      });
+      return;
+    }
+
+    const { action, target } = req.body;
+    if (!action || !['Attack', 'Defend', 'Train'].includes(action)) {
+      res.status(400).json({
+        status: 'error',
+        message: 'Invalid action',
+      });
+      return;
+    }
+
+    const success = await GameLogic.submitVote(username, action, target);
+
+    if (success) {
+      res.json({
+        type: 'vote',
+        success: true,
+        message: `Vote submitted: ${action}${target ? ` on ${target}` : ''}`,
+      });
+    } else {
+      res.json({
+        type: 'vote',
+        success: false,
+        message: 'Unable to submit vote. You may have already voted or are not in a faction.',
       });
     }
+  } catch (error) {
+    console.error('Vote error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to submit vote',
+    });
   }
-);
+});
 
 router.get<{}, GameStateResponse | { status: string; message: string }>(
   '/api/game-state',
@@ -199,7 +201,7 @@ router.post<{}, RestartGameResponse | { status: string; message: string }>(
 
       // For now, allow any authenticated user to restart (in production, implement proper mod check)
       const isModerator = true; // TODO: Implement proper moderator check
-      
+
       if (!isModerator) {
         res.status(403).json({
           status: 'error',
@@ -209,7 +211,7 @@ router.post<{}, RestartGameResponse | { status: string; message: string }>(
       }
 
       await GameLogic.resetGame();
-      
+
       res.json({
         type: 'restart-game',
         success: true,
@@ -230,7 +232,7 @@ router.post<{}, { success: boolean; message: string; processed?: boolean; nextTu
   async (_req, res): Promise<void> => {
     try {
       const result = await TurnScheduler.processTurnIfReady();
-      
+
       if (result.processed) {
         res.json({
           success: true,
@@ -238,10 +240,10 @@ router.post<{}, { success: boolean; message: string; processed?: boolean; nextTu
           processed: true,
         });
       } else {
-        const hoursRemaining = Math.ceil((result.nextTurnIn || 0) / (1000 * 60 * 60));
+        const minutesRemaining = Math.ceil((result.nextTurnIn || 0) / (1000 * 60));
         res.json({
           success: true,
-          message: `Next turn in approximately ${hoursRemaining} hours`,
+          message: `Next turn in approximately ${minutesRemaining} minutes`,
           processed: false,
           nextTurnIn: result.nextTurnIn || 0,
         });
@@ -256,22 +258,48 @@ router.post<{}, { success: boolean; message: string; processed?: boolean; nextTu
   }
 );
 
-router.get<{}, { timeUntilNext: number; hoursRemaining: number }>(
+router.get<{}, { timeUntilNext: number; minutesRemaining: number; shouldProcess: boolean }>(
   '/api/turn-status',
   async (_req, res): Promise<void> => {
     try {
       const timeUntilNext = await TurnScheduler.getTimeUntilNextTurn();
-      const hoursRemaining = Math.ceil(timeUntilNext / (1000 * 60 * 60));
-      
+      const minutesRemaining = Math.ceil(timeUntilNext / (1000 * 60));
+      const shouldProcess = await TurnScheduler.shouldProcessTurn();
+
       res.json({
         timeUntilNext,
-        hoursRemaining,
+        minutesRemaining,
+        shouldProcess,
       });
     } catch (error) {
       console.error('Turn status error:', error);
       res.status(500).json({
         timeUntilNext: 0,
-        hoursRemaining: 0,
+        minutesRemaining: 0,
+        shouldProcess: false,
+      });
+    }
+  }
+);
+
+router.post<{}, { success: boolean; message: string; forced?: boolean }>(
+  '/api/force-turn',
+  async (_req, res): Promise<void> => {
+    try {
+      // Force process turn regardless of timer (for debugging)
+      const results = await GameLogic.processTurn();
+      await TurnScheduler.markTurnProcessed();
+
+      res.json({
+        success: true,
+        message: `Turn force-processed with ${results.length} faction actions`,
+        forced: true,
+      });
+    } catch (error) {
+      console.error('Force turn error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to force process turn',
       });
     }
   }

@@ -13,7 +13,6 @@ export const createPost = async () => {
       backgroundUri: 'default-splash.png',
       buttonLabel: 'Join the Battle!',
       description: 'Choose your faction and battle for supremacy! Vote daily on Attack, Defend, or Train actions. Will your faction dominate the leaderboard?',
-      entryUri: 'index.html',
       heading: '⚔️ Reddit Factions War',
       appIconUri: 'default-icon.png',
     },
